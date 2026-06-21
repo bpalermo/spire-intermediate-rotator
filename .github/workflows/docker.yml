@@ -20,18 +20,26 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Login to Docker Hub
-        if: ${{ secrets.DOCKERHUB_TOKEN != '' }}
+        if: ${{ vars.DOCKERHUB_USERNAME != '' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Image names
+        id: imgs
+        run: |
+          echo "list=ghcr.io/${{ github.repository }}" >> "$GITHUB_OUTPUT"
+          if [ -n "${{ vars.DOCKERHUB_USERNAME }}" ]; then
+            echo "list<<EOF" >> "$GITHUB_OUTPUT"
+            echo "ghcr.io/${{ github.repository }}" >> "$GITHUB_OUTPUT"
+            echo "docker.io/${{ vars.DOCKERHUB_USERNAME }}/spire-intermediate-rotator" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          fi
       - name: Metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: |
-            ghcr.io/${{ github.repository }}
-            ${{ secrets.DOCKERHUB_TOKEN != '' && format('docker.io/{0}/spire-intermediate-rotator', secrets.DOCKERHUB_USERNAME) || '' }}
+          images: ${{ steps.imgs.outputs.list }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=long
