@@ -1,22 +1,21 @@
 # spire-intermediate-rotator
 
-Container image that rotates a SPIRE `UpstreamAuthority: disk` intermediate CA by
-re-signing a short-lived EC intermediate with an **AWS KMS** root key, writing the
-result to a Kubernetes Secret, and restarting the SPIRE server.
+Minimal **distroless** toolbox image for rotating a SPIRE `UpstreamAuthority: disk`
+intermediate CA: re-sign a short-lived EC intermediate with an **AWS KMS** root key,
+write it to a Kubernetes Secret, and restart the SPIRE server.
 
-Bundles `step` + `step-kms-plugin` (for KMS-backed signing) + `kubectl`.
+Bundles `step` + `step-kms-plugin` (KMS-backed signing) + `kubectl`, on
+`gcr.io/distroless/base-debian12:nonroot` (no shell). The rotation is driven by the
+Kubernetes CronJob as single-command containers (sign → recreate secret → rollout
+restart), e.g. in `bpalermo/k8s-talos-main` under `clusters/talos-main/spire-int-rotator`.
 
-## Env vars
-| Var | Required | Default | Meaning |
-|-----|----------|---------|---------|
-| `ROOT_KEY_ID` | yes | — | AWS KMS key id of the root CA |
-| `AWS_REGION` | yes | — | KMS region |
-| `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` | yes | — | creds with `kms:Sign` on the root |
-| `NAMESPACE` | no | `spire-server` | namespace of the secret + statefulset |
-| `SECRET_NAME` | no | `spiffe-upstream-ca` | secret to write (tls.crt/tls.key/bundle.crt) |
-| `SPIRE_STATEFULSET` | no | `spire-server` | statefulset to `rollout restart` |
-| `INT_TTL` | no | `2160h` | intermediate validity (90d) |
-| `INT_SUBJECT` | no | `Palermo Intermediate CA - aether.internal` | subject CN |
-| `ROOT_CRT` | no | `/root-ca/root.crt` | path to the mounted root cert (bundle) |
+## Contents
+| Tool | Purpose |
+|------|---------|
+| `step` + `step-kms-plugin` | `step certificate create --ca-key awskms:key-id=… --kms awskms:region=…` |
+| `kubectl` | recreate the `spiffe-upstream-ca` secret + `rollout restart` the SPIRE StatefulSet |
 
-The root cert (public) is mounted from a ConfigMap at `ROOT_CRT`.
+Pinned: step 0.30.6, step-kms-plugin 0.17.0, kubectl 1.36.1 (override via build args).
+
+Published to `ghcr.io/bpalermo/spire-intermediate-rotator` (and Docker Hub when CI
+secrets are configured).
