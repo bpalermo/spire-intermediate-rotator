@@ -17,5 +17,4 @@ restart), e.g. in `bpalermo/k8s-talos-main` under `clusters/talos-main/spire-int
 
 Pinned: step 0.30.6, step-kms-plugin 0.17.0, kubectl 1.36.1 (override via build args).
 
-Published to `ghcr.io/bpalermo/spire-intermediate-rotator` (and Docker Hub when CI
-secrets are configured).
+Published to `ghcr.io/bpalermo/spire-intermediate-rotator`.
